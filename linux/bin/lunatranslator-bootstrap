@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# lunatranslator-bootstrap — fetch/refresh the portable LunaTranslator build.
+#
+# Normally run automatically on first launch. Invoke directly to pre-fetch the
+# app, or with --force to re-download (e.g. switch architecture/target).
+set -euo pipefail
+
+# shellcheck source=../lib/lunatranslator-common.sh
+source "${LT_LIB_DIR:-/usr/lib/lunatranslator}/lunatranslator-common.sh"
+
+if [[ "${1:-}" == "--force" ]]; then
+	lt_warn "Removing existing app at $LT_APP_DIR and re-downloading."
+	rm -rf "$LT_APP_DIR"
+fi
+
+lt_bootstrap
+lt_log "Ready. App: $LT_APP_DIR"

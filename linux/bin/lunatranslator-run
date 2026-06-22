@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# lunatranslator-run — manual launcher (the foundation path).
+#
+# Start LunaTranslator and a Windows game in the SAME Wine prefix so HOOK can
+# attach. Use for games you run by hand (not via Steam/Lutris/Heroic).
+#
+# Usage:
+#   lunatranslator-run /path/to/game.exe [game args...]
+#   lunatranslator-run --prefix ~/.wine-vn /path/to/game.exe
+#   lunatranslator-run --wine /usr/bin/wine64 game.exe
+#
+# Without --prefix the shared default prefix is used, so several manually-run
+# games can share one prefix.
+set -euo pipefail
+
+# shellcheck source=../lib/lunatranslator-common.sh
+source "${LT_LIB_DIR:-/usr/lib/lunatranslator}/lunatranslator-common.sh"
+
+prefix="$LT_DEFAULT_PREFIX"
+wine="$LT_WINE"
+
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		--prefix) prefix="${2:?--prefix needs a path}"; shift 2 ;;
+		--wine)   wine="${2:?--wine needs a path}";     shift 2 ;;
+		--help|-h)
+			grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+		--) shift; break ;;
+		*) break ;;
+	esac
+done
+
+game="${1:-}"
+[[ -n "$game" ]] || lt_die "no game .exe given (see --help)"
+[[ -f "$game" ]] || lt_die "game not found: $game"
+shift || true
+
+# Resolve to an absolute path before any implicit cwd changes.
+game="$(readlink -f -- "$game")"
+
+start_luna_then "$prefix" "$wine"
+
+lt_log "Launching game: $game"
+WINEPREFIX="$prefix" "$wine" "$game" "$@" || lt_warn "game exited non-zero"
+
+# Keep LunaTranslator in the foreground after the game quits so the user can
+# read/close it themselves.
+wait "${LT_PID:-}" 2>/dev/null || true

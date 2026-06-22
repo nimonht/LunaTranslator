@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# lunatranslator-lutris — inject LunaTranslator into a Lutris game's prefix.
+#
+# Two supported placements in the Lutris UI (game → Configure → System options):
+#
+#   A) Pre-launch script  (recommended, simplest)
+#        Script: /usr/bin/lunatranslator-lutris
+#        Tick "Wait for pre-launch script completion" = OFF
+#      Lutris exports WINEPREFIX for the script; we start Luna in it and exit,
+#      then Lutris starts the game in that same prefix. HOOK attaches.
+#
+#   B) Command prefix / wrapper (if you want Luna tied to the game lifecycle)
+#        Command prefix: /usr/bin/lunatranslator-lutris
+#      Lutris calls us as:  lunatranslator-lutris <wine> <game.exe> [args...]
+#      We start Luna, then exec the real command.
+#
+# The Wine build: by default we reuse $WINE (Lutris sets it to the game's runner)
+# so the hook ABI matches the game; otherwise we fall back to system `wine`.
+set -euo pipefail
+
+# shellcheck source=../lib/lunatranslator-common.sh
+source "${LT_LIB_DIR:-/usr/lib/lunatranslator}/lunatranslator-common.sh"
+
+prefix="${WINEPREFIX:-}"
+[[ -n "$prefix" ]] || lt_die "WINEPREFIX not set — run this from a Lutris game's System options, not by hand."
+
+# Prefer the runner Lutris is using so the injected hook matches the game's wine.
+wine="${WINE:-$LT_WINE}"
+
+if [[ $# -eq 0 ]]; then
+	# Mode A: pre-launch script. Start Luna in the background and let Lutris
+	# launch the game itself.
+	run_luna_in_prefix "$prefix" "$wine"
+	lt_log "LunaTranslator started in Lutris prefix; handing back to Lutris."
+	exit 0
+fi
+
+# Mode B: wrapper. First arg may be the wine binary Lutris chose.
+if [[ "$1" == *wine* || "$1" == *proton* ]]; then
+	wine="$1"; shift
+fi
+start_luna_then "$prefix" "$wine"
+lt_log "Executing Lutris game command: $*"
+exec "$@"

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Run with LunaTranslator
+Comment=Launch this Windows game with LunaTranslator hooking enabled
+Exec=lunatranslator-run %f
+Icon=lunatranslator
+Terminal=false
+NoDisplay=true
+MimeType=application/x-ms-dos-executable;application/x-msdownload;
+Categories=Utility;

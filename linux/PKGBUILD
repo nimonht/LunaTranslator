@@ -1,0 +1,80 @@
+# Maintainer: LunaTranslator contributors
+#
+# Packages the thin Linux wrappers that run the official portable LunaTranslator
+# under Wine, with per-launcher (manual/Lutris/Heroic/Steam) injection and a
+# native Wayland OCR feeder. The Windows app itself is fetched on first run and
+# self-updates, so this package only versions the wrappers.
+pkgname=lunatranslator-wine
+pkgver=10.15.9.15
+pkgrel=1
+pkgdesc="Galgame/visual-novel translator (HOOK, OCR, overlay) running under Wine on Linux"
+arch=('any')
+url="https://github.com/HIllya51/LunaTranslator"
+license=('GPL3')
+depends=(
+	'wine'
+	'curl'
+	'unzip'
+	'wl-clipboard'
+	'tesseract'
+	'tesseract-data-jpn'
+	'tesseract-data-eng'
+	'grim'
+	'slurp'
+	'python'
+	'xdg-desktop-portal'
+)
+optdepends=(
+	'wine-staging: newer Wine with more fixes for games'
+	'winetricks: install Windows runtime components into a prefix'
+	'steam: Steam/Proton games (lunatranslator-steam)'
+	'lutris: Lutris-managed games (lunatranslator-lutris)'
+	'heroic-games-launcher: Epic/GOG games (lunatranslator-heroic)'
+	'python-mss: X11/XWayland screen capture fallback for the OCR feeder'
+	'manga-ocr: much better Japanese OCR than tesseract'
+	'adobe-source-han-sans-jp-fonts: Japanese font rendering in Wine'
+	'wqy-zenhei: CJK font fallback in Wine'
+)
+install="lunatranslator.install"
+source=(
+	'lib/lunatranslator-common.sh'
+	'bin/lunatranslator-bootstrap'
+	'bin/lunatranslator'
+	'bin/lunatranslator-run'
+	'bin/lunatranslator-lutris'
+	'bin/lunatranslator-heroic'
+	'bin/lunatranslator-steam'
+	'bin/lunatranslator-ocr'
+	'share/lunatranslator.desktop'
+	'share/lunatranslator-run.desktop'
+	'README.md'
+)
+# Local-source build (run `makepkg -si` from this directory). For a real AUR
+# upload, replace these with a release tarball + checksums.
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+
+package() {
+	cd "$srcdir"
+
+	# Shared library, sourced by every wrapper.
+	install -Dm644 lunatranslator-common.sh \
+		"$pkgdir/usr/lib/lunatranslator/lunatranslator-common.sh"
+
+	# Wrapper scripts.
+	local s
+	for s in lunatranslator-bootstrap lunatranslator lunatranslator-run \
+		lunatranslator-lutris lunatranslator-heroic lunatranslator-steam \
+		lunatranslator-ocr; do
+		install -Dm755 "$s" "$pkgdir/usr/bin/$s"
+	done
+
+	# Desktop entry + file-manager "Run with LunaTranslator" action.
+	install -Dm644 lunatranslator.desktop \
+		"$pkgdir/usr/share/applications/lunatranslator.desktop"
+	install -Dm644 lunatranslator-run.desktop \
+		"$pkgdir/usr/share/applications/lunatranslator-run.desktop"
+
+	# Documentation.
+	install -Dm644 README.md \
+		"$pkgdir/usr/share/doc/lunatranslator-wine/README.md"
+}

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# lunatranslator — launch the portable LunaTranslator in its own default prefix.
+#
+# This is the .desktop entry point: general OCR + clipboard translation use, and
+# first-run bootstrap. For hooking a specific game, use one of:
+#   lunatranslator-run      (manual .exe)
+#   lunatranslator-lutris   (Lutris pre-launch)
+#   lunatranslator-heroic   (Heroic wrapper)
+#   lunatranslator-steam    (Steam launch option)
+set -euo pipefail
+
+# shellcheck source=../lib/lunatranslator-common.sh
+source "${LT_LIB_DIR:-/usr/lib/lunatranslator}/lunatranslator-common.sh"
+
+run_luna_in_prefix "$LT_DEFAULT_PREFIX" "$LT_WINE" "$@"
+wait "${LT_PID:-}" 2>/dev/null || true
