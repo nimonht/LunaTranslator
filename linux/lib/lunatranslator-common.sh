@@ -7,8 +7,6 @@
 #   * run_luna_in_prefix(): the single code path that launches the shared
 #     LunaTranslator into an arbitrary Wine/Proton prefix.
 #
-# Nothing here touches the upstream application source. The portable app is
-# self-updating (myutils/updater.py), so we only ever fetch it once.
 
 # --- configuration (override via environment) --------------------------------
 

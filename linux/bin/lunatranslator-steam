@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 # lunatranslator-steam — inject LunaTranslator into a Steam/Proton game.
 #
-# *** Best-effort path: Proton's pressure-vessel container makes injection the
-#     most setup-sensitive of all launchers. See linux/README.md troubleshooting. ***
-#
 # Setup: in Steam, game → Properties → General → Launch Options:
 #       /usr/bin/lunatranslator-steam %command%
 #

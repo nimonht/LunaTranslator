@@ -2,10 +2,9 @@
 #
 # Packages the thin Linux wrappers that run the official portable LunaTranslator
 # under Wine, with per-launcher (manual/Lutris/Heroic/Steam) injection and a
-# native Wayland OCR feeder. The Windows app itself is fetched on first run and
-# self-updates, so this package only versions the wrappers.
+# native Wayland OCR feeder.
 pkgname=lunatranslator-wine
-pkgver=10.15.9.15
+pkgver=1.0.0
 pkgrel=1
 pkgdesc="Galgame/visual-novel translator (HOOK, OCR, overlay) running under Wine on Linux"
 arch=('any')

@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 """lunatranslator-ocr — native Wayland OCR feeder for LunaTranslator.
 
-Closes the "native Linux browser game" gap: LunaTranslator runs under Wine and
-cannot screen-grab the host compositor, but it *does* translate any text that
-lands on the clipboard (textio/textsource/copyboard.py). So this tool:
-
     1. captures a screen region on the host (Wayland-native),
     2. OCRs it (tesseract by default; manga-ocr optional, much better for JP),
     3. pushes the text to the clipboard with wl-copy.
@@ -17,6 +13,7 @@ Capture backends, auto-detected (override with --backend):
     portal : xdg-desktop-portal Screenshot  (GNOME, KDE)
     mss    : python-mss      (X11 / XWayland fallback)
 """
+
 from __future__ import annotations
 
 import argparse
@@ -77,9 +74,7 @@ def capture_portal(out_path: str) -> None:
     elif have("spectacle"):
         subprocess.run(["spectacle", "-rbn", "-o", out_path], check=True)
     else:
-        raise SystemExit(
-            "portal backend needs gnome-screenshot or spectacle installed"
-        )
+        raise SystemExit("portal backend needs gnome-screenshot or spectacle installed")
 
 
 def capture_mss(out_path: str) -> None:
@@ -139,24 +134,31 @@ def push_clipboard(text: str) -> None:
 
 def parse_args(argv=None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        prog="lunatranslator-ocr", description=__doc__,
+        prog="lunatranslator-ocr",
+        description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument(
-        "--lang", default=os.environ.get("LT_OCR_LANG", "jpn+eng"),
+        "--lang",
+        default=os.environ.get("LT_OCR_LANG", "jpn+eng"),
         help="tesseract language(s), default jpn+eng",
     )
     p.add_argument(
-        "--engine", choices=("tesseract", "manga-ocr"),
+        "--engine",
+        choices=("tesseract", "manga-ocr"),
         default=os.environ.get("LT_OCR_ENGINE", "tesseract"),
         help="OCR engine (manga-ocr is far better for Japanese)",
     )
     p.add_argument(
-        "--backend", choices=CAPTURE_BACKENDS, default=None,
+        "--backend",
+        choices=CAPTURE_BACKENDS,
+        default=None,
         help="capture backend (default: auto-detect)",
     )
     p.add_argument(
-        "--print", action="store_true", dest="echo",
+        "--print",
+        action="store_true",
+        dest="echo",
         help="also print recognized text to stdout",
     )
     return p.parse_args(argv)

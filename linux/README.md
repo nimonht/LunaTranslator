@@ -1,14 +1,7 @@
 # LunaTranslator on Arch Linux (Wine)
 
 Run LunaTranslator — with **HOOK** (visual novels), **overlay**, and **OCR**
-(browser games) — natively-installed on Arch via Wine. No full native port: the
-app runs under Wine/XWayland, which is where its always-on-top window, global
-hotkeys and screen capture actually work on Wayland.
-
-The design in one line: **one shared, self-updating portable LunaTranslator that
-we run *inside whatever Wine prefix your game already uses*** (manual, Lutris,
-Heroic, Steam/Proton). Your existing game prefixes are never patched, copied, or
-re-installed — LunaTranslator just joins them, which is what HOOK needs.
+(browser games) — natively-installed on Arch via Wine. 
 
 ---
 
@@ -74,7 +67,7 @@ Game → **Settings** → **Advanced** → **Wrapper command** (or global *Wrapp
 Heroic runs the game through the wrapper and exports the prefix
 (`WINEPREFIX` for Wine games, `STEAM_COMPAT_DATA_PATH` for Proton).
 
-### 4. Steam / Proton (best-effort)
+### 4. Steam / Proton 
 
 Game → **Properties** → **General** → **Launch Options**:
 
@@ -90,9 +83,9 @@ See **Troubleshooting** if hooking doesn't attach.
 
 ---
 
-## OCR for native Linux browser games
+## OCR for native Linux and browser games
 
-Native (non-Wine) browser games can't be screen-grabbed from inside the Wine
+Native (non-Wine) and browser games can't be screen-grabbed from inside the Wine
 prefix. The feeder captures a region on the host, OCRs it, and pushes the text
 to the clipboard — Wine mirrors the clipboard into the prefix, and
 LunaTranslator's clipboard source translates it.
@@ -106,9 +99,9 @@ lunatranslator-ocr --lang jpn --print
 Make sure LunaTranslator's **clipboard** text source is enabled (it is by
 default). Then **bind `lunatranslator-ocr` to a hotkey** in your compositor:
 
-**Hyprland** (`~/.config/hypr/hyprland.conf`):
+**Hyprland** (`~/.config/hypr/hyprland.lua`):
 ```
-bind = SUPER, T, exec, lunatranslator-ocr
+hl.bind("SUPER + T", hl.dsp.exec_cmd("lunatranslator-ocr"))
 ```
 
 **Sway** (`~/.config/sway/config`):
@@ -178,12 +171,3 @@ LT_RELEASE_URL=https://your.mirror/LunaTranslator_x64_win10.zip lunatranslator-b
 | `LT_OCR_ENGINE` | `tesseract` | `tesseract` or `manga-ocr` |
 
 ---
-
-## What this does and doesn't touch
-
-* **Zero changes to the application source** — upstream is tracked effortlessly
-  and LunaTranslator's own self-updater stays authoritative.
-* **One portable copy, many prefixes** — no per-game install or patching; your
-  Steam/Lutris/Heroic libraries are untouched.
-* Integration with Luna is via the **clipboard**, so there are no servers or
-  ports to manage.
