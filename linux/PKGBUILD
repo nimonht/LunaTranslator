@@ -36,27 +36,17 @@ optdepends=(
 )
 install="lunatranslator.install"
 source=(
-	'lib/lunatranslator-common.sh'
-	'bin/lunatranslator-bootstrap'
-	'bin/lunatranslator'
-	'bin/lunatranslator-run'
-	'bin/lunatranslator-lutris'
-	'bin/lunatranslator-heroic'
-	'bin/lunatranslator-steam'
-	'bin/lunatranslator-ocr'
-	'share/lunatranslator.desktop'
-	'share/lunatranslator-run.desktop'
 	'README.md'
 )
 # Local-source build (run `makepkg -si` from this directory). For a real AUR
 # upload, replace these with a release tarball + checksums.
-sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+sha256sums=('SKIP')
 
 package() {
 	cd "$srcdir"
 
 	# Shared library, sourced by every wrapper.
-	install -Dm644 lunatranslator-common.sh \
+	install -Dm644 "$startdir/lib/lunatranslator-common.sh" \
 		"$pkgdir/usr/lib/lunatranslator/lunatranslator-common.sh"
 
 	# Wrapper scripts.
@@ -64,13 +54,13 @@ package() {
 	for s in lunatranslator-bootstrap lunatranslator lunatranslator-run \
 		lunatranslator-lutris lunatranslator-heroic lunatranslator-steam \
 		lunatranslator-ocr; do
-		install -Dm755 "$s" "$pkgdir/usr/bin/$s"
+		install -Dm755 "$startdir/bin/$s" "$pkgdir/usr/bin/$s"
 	done
 
 	# Desktop entry + file-manager "Run with LunaTranslator" action.
-	install -Dm644 lunatranslator.desktop \
+	install -Dm644 "$startdir/share/lunatranslator.desktop" \
 		"$pkgdir/usr/share/applications/lunatranslator.desktop"
-	install -Dm644 lunatranslator-run.desktop \
+	install -Dm644 "$startdir/share/lunatranslator-run.desktop" \
 		"$pkgdir/usr/share/applications/lunatranslator-run.desktop"
 
 	# Documentation.
