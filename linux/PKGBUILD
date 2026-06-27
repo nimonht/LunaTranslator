@@ -22,6 +22,7 @@ depends=(
 	'slurp'
 	'python'
 	'xdg-desktop-portal'
+	'hicolor-icon-theme'
 )
 optdepends=(
 	'wine-staging: newer Wine with more fixes for games'
@@ -38,8 +39,6 @@ install="lunatranslator.install"
 source=(
 	'README.md'
 )
-# Local-source build (run `makepkg -si` from this directory). For a real AUR
-# upload, replace these with a release tarball + checksums.
 sha256sums=('SKIP')
 
 package() {
@@ -62,6 +61,14 @@ package() {
 		"$pkgdir/usr/share/applications/lunatranslator.desktop"
 	install -Dm644 "$startdir/share/lunatranslator-run.desktop" \
 		"$pkgdir/usr/share/applications/lunatranslator-run.desktop"
+
+	# Application icon, installed into the hicolor theme so the .desktop
+	# entries' `Icon=lunatranslator` resolves system-wide on first install
+	local sz
+	for sz in 16 32 48 256; do
+		install -Dm644 "$startdir/share/icons/$sz/lunatranslator.png" \
+			"$pkgdir/usr/share/icons/hicolor/${sz}x${sz}/apps/lunatranslator.png"
+	done
 
 	# Documentation.
 	install -Dm644 README.md \

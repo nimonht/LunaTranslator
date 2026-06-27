@@ -8,7 +8,7 @@ Run LunaTranslator — with **HOOK** (visual novels), **overlay**, and **OCR**
 ## Install
 
 ```sh
-# From the AUR (once published):
+# From the AUR:
 paru -S lunatranslator-wine        # or: yay -S lunatranslator-wine
 
 # Or build locally from this repo:

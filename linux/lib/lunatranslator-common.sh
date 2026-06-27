@@ -91,20 +91,8 @@ lt_bootstrap() {
 	mv "$inner" "$LT_APP_DIR" || lt_die "could not install app to $LT_APP_DIR"
 	lt_find_exe >/dev/null || lt_die "post-install sanity check failed"
 
-	# Best-effort: surface an icon for the .desktop entry if the build ships one.
-	lt_install_icon_from_app
 
 	lt_log "Installed to $LT_APP_DIR"
-}
-
-# Copy an icon out of the app dir into the user icon theme if one exists.
-lt_install_icon_from_app() {
-	local ico dest
-	dest="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/256x256/apps"
-	ico="$(find "$LT_APP_DIR" -maxdepth 3 \( -iname 'lunatranslator.png' -o -iname 'icon.png' \) -print -quit 2>/dev/null)"
-	[[ -n "$ico" ]] || return 0
-	mkdir -p "$dest"
-	cp -f "$ico" "$dest/lunatranslator.png" 2>/dev/null || true
 }
 
 # --- prefix launch -----------------------------------------------------------
