@@ -1,0 +1,76 @@
+# Maintainer: LunaTranslator contributors
+#
+# Packages the thin Linux wrappers that run the official portable LunaTranslator
+# under Wine, with per-launcher (manual/Lutris/Heroic/Steam) injection and a
+# native Wayland OCR feeder.
+pkgname=lunatranslator-wine
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Galgame/visual-novel translator (HOOK, OCR, overlay) running under Wine on Linux"
+arch=('any')
+url="https://github.com/HIllya51/LunaTranslator"
+license=('GPL3')
+depends=(
+	'wine'
+	'curl'
+	'unzip'
+	'wl-clipboard'
+	'tesseract'
+	'tesseract-data-jpn'
+	'tesseract-data-eng'
+	'grim'
+	'slurp'
+	'python'
+	'xdg-desktop-portal'
+	'hicolor-icon-theme'
+)
+optdepends=(
+	'wine-staging: newer Wine with more fixes for games'
+	'winetricks: install Windows runtime components into a prefix'
+	'steam: Steam/Proton games (lunatranslator-steam)'
+	'lutris: Lutris-managed games (lunatranslator-lutris)'
+	'heroic-games-launcher: Epic/GOG games (lunatranslator-heroic)'
+	'python-mss: X11/XWayland screen capture fallback for the OCR feeder'
+	'manga-ocr: much better Japanese OCR than tesseract'
+	'adobe-source-han-sans-jp-fonts: Japanese font rendering in Wine'
+	'wqy-zenhei: CJK font fallback in Wine'
+)
+install="lunatranslator.install"
+source=(
+	'README.md'
+)
+sha256sums=('SKIP')
+
+package() {
+	cd "$srcdir"
+
+	# Shared library, sourced by every wrapper.
+	install -Dm644 "$startdir/lib/lunatranslator-common.sh" \
+		"$pkgdir/usr/lib/lunatranslator/lunatranslator-common.sh"
+
+	# Wrapper scripts.
+	local s
+	for s in lunatranslator-bootstrap lunatranslator lunatranslator-run \
+		lunatranslator-lutris lunatranslator-heroic lunatranslator-steam \
+		lunatranslator-ocr; do
+		install -Dm755 "$startdir/bin/$s" "$pkgdir/usr/bin/$s"
+	done
+
+	# Desktop entry + file-manager "Run with LunaTranslator" action.
+	install -Dm644 "$startdir/share/lunatranslator.desktop" \
+		"$pkgdir/usr/share/applications/lunatranslator.desktop"
+	install -Dm644 "$startdir/share/lunatranslator-run.desktop" \
+		"$pkgdir/usr/share/applications/lunatranslator-run.desktop"
+
+	# Application icon, installed into the hicolor theme so the .desktop
+	# entries' `Icon=lunatranslator` resolves system-wide on first install
+	local sz
+	for sz in 16 32 48 256; do
+		install -Dm644 "$startdir/share/icons/$sz/lunatranslator.png" \
+			"$pkgdir/usr/share/icons/hicolor/${sz}x${sz}/apps/lunatranslator.png"
+	done
+
+	# Documentation.
+	install -Dm644 README.md \
+		"$pkgdir/usr/share/doc/lunatranslator-wine/README.md"
+}

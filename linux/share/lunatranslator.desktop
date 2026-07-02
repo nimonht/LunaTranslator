@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=LunaTranslator
+GenericName=Galgame/Visual Novel Translator
+Comment=Translate visual novels and games via Wine (HOOK, OCR, clipboard)
+Exec=lunatranslator
+Icon=lunatranslator
+Terminal=false
+Categories=Utility;
+Keywords=translate;visualnovel;galgame;japanese;ocr;wine;
+StartupNotify=true

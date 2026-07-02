@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# lunatranslator-steam — inject LunaTranslator into a Steam/Proton game.
+#
+# Setup: in Steam, game → Properties → General → Launch Options:
+#       /usr/bin/lunatranslator-steam %command%
+#
+# Steam expands %command% to the full Proton invocation and exports
+# STEAM_COMPAT_DATA_PATH (the game's compatdata dir; the live prefix is pfx/).
+# We start Luna with the SAME Proton into that prefix, then exec the game so the
+# injected hook ABI matches Proton's bundled Wine.
+set -euo pipefail
+
+# shellcheck source=../lib/lunatranslator-common.sh
+source "${LT_LIB_DIR:-/usr/lib/lunatranslator}/lunatranslator-common.sh"
+
+[[ -n "${STEAM_COMPAT_DATA_PATH:-}" ]] \
+	|| lt_die "STEAM_COMPAT_DATA_PATH not set — this must run as a Steam launch option with %command%."
+
+prefix="$STEAM_COMPAT_DATA_PATH/pfx"
+
+# Locate Proton inside the expanded %command% (an arg path ending in /proton).
+proton=""
+for arg in "$@"; do
+	case "$arg" in
+		*/proton) proton="$arg"; break ;;
+	esac
+done
+
+lt_bootstrap
+exe="$(lt_find_exe)" || lt_die "LunaTranslator.exe missing after bootstrap"
+
+if [[ -n "$proton" ]]; then
+	lt_log "Starting LunaTranslator via Proton: $proton (prefix: $prefix)"
+	# `proton run` reuses Steam's already-exported compat env and the game's
+	# prefix, so Luna and the game share Wine — required for HOOK.
+	"$proton" run "$exe" &
+	LT_PID=$!
+elif command -v "${LT_WINE}" >/dev/null 2>&1; then
+	lt_warn "Could not detect Proton in %command%; falling back to system wine."
+	lt_warn "Hooking may fail due to Wine/Proton ABI mismatch (see README)."
+	WINEPREFIX="$prefix" "$LT_WINE" "$exe" &
+	LT_PID=$!
+else
+	lt_die "no Proton detected and no system wine available"
+fi
+export LT_PID
+
+sleep "${LT_STARTUP_DELAY:-3}"
+lt_log "Executing Steam game command: $*"
+exec "$@"

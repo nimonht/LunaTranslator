@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# lunatranslator-heroic — inject LunaTranslator into a Heroic game's prefix.
+#
+# Setup in Heroic (game → Settings → Advanced → "Wrapper command", or the global
+# "Wrappers" setting):
+#       Add wrapper:  /usr/bin/lunatranslator-heroic
+#
+# Heroic invokes a wrapper as:  lunatranslator-heroic <game-command> [args...]
+# and exports the prefix as STEAM_COMPAT_DATA_PATH (Proton) or WINEPREFIX (Wine).
+# We resolve the prefix, start Luna in it, then exec the real game command.
+set -euo pipefail
+
+# shellcheck source=../lib/lunatranslator-common.sh
+source "${LT_LIB_DIR:-/usr/lib/lunatranslator}/lunatranslator-common.sh"
+
+# Resolve the prefix: Wine games expose WINEPREFIX; Proton games expose
+# STEAM_COMPAT_DATA_PATH whose actual prefix is the pfx/ subdir.
+prefix=""
+if [[ -n "${WINEPREFIX:-}" ]]; then
+	prefix="$WINEPREFIX"
+elif [[ -n "${STEAM_COMPAT_DATA_PATH:-}" ]]; then
+	prefix="$STEAM_COMPAT_DATA_PATH/pfx"
+fi
+[[ -n "$prefix" ]] || lt_die "no WINEPREFIX/STEAM_COMPAT_DATA_PATH in env — run this as a Heroic wrapper, not by hand."
+
+# Reuse Heroic's wine/proton when discoverable so the hook ABI matches the game.
+wine="${WINE:-$LT_WINE}"
+
+[[ $# -gt 0 ]] || lt_die "Heroic should pass the game command; got none."
+
+start_luna_then "$prefix" "$wine"
+lt_log "Executing Heroic game command: $*"
+exec "$@"

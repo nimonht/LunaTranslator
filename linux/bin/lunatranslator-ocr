@@ -1,0 +1,191 @@
+#!/usr/bin/env python3
+"""lunatranslator-ocr — native Wayland OCR feeder for LunaTranslator.
+
+    1. captures a screen region on the host (Wayland-native),
+    2. OCRs it (tesseract by default; manga-ocr optional, much better for JP),
+    3. pushes the text to the clipboard with wl-copy.
+
+Wine mirrors the host clipboard into the prefix, so LunaTranslator picks the
+text up and translates it. Bind this command to a compositor hotkey.
+
+Capture backends, auto-detected (override with --backend):
+    grim   : grim + slurp  (wlroots: Hyprland, Sway, river, ...)
+    portal : xdg-desktop-portal Screenshot  (GNOME, KDE)
+    mss    : python-mss      (X11 / XWayland fallback)
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
+# --- backend selection (pure; unit-tested) -----------------------------------
+
+CAPTURE_BACKENDS = ("grim", "portal", "mss")
+
+
+def have(cmd: str) -> bool:
+    return shutil.which(cmd) is not None
+
+
+def detect_capture_backend(env=None, _have=have) -> str:
+    """Pick a capture backend from the environment. Pure for testability.
+
+    Preference: wlroots grim+slurp > desktop-portal > X11 mss.
+    """
+    env = os.environ if env is None else env
+    wayland = bool(env.get("WAYLAND_DISPLAY"))
+    if wayland and _have("grim") and _have("slurp"):
+        return "grim"
+    if wayland:
+        # Wayland session without grim/slurp: fall back to a desktop-portal
+        # front-end (GNOME/KDE).
+        return "portal"
+    # X11 / XWayland.
+    return "mss"
+
+
+def build_tesseract_cmd(image: str, lang: str) -> list[str]:
+    """Build the tesseract argv. Pure for testability."""
+    return ["tesseract", image, "stdout", "-l", lang, "--psm", "6"]
+
+
+# --- capture -----------------------------------------------------------------
+
+
+def capture_grim(out_path: str) -> None:
+    geom = subprocess.run(
+        ["slurp"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    if not geom:
+        raise SystemExit("region selection cancelled")
+    subprocess.run(["grim", "-g", geom, out_path], check=True)
+
+
+def capture_portal(out_path: str) -> None:
+    # Use the interactive portal screenshot, then copy the result.
+    # gnome-screenshot / spectacle area mode are the practical CLI front-ends.
+    if have("gnome-screenshot"):
+        subprocess.run(["gnome-screenshot", "-a", "-f", out_path], check=True)
+    elif have("spectacle"):
+        subprocess.run(["spectacle", "-rbn", "-o", out_path], check=True)
+    else:
+        raise SystemExit("portal backend needs gnome-screenshot or spectacle installed")
+
+
+def capture_mss(out_path: str) -> None:
+    try:
+        import mss  # noqa: F401  (lazy: only needed for X11)
+        import mss.tools
+    except ImportError:
+        raise SystemExit("mss backend needs python-mss (pacman -S python-mss)")
+    # mss has no interactive region picker; grab the primary monitor. Users on
+    # X11 wanting a region should install slurp/grim or a portal front-end.
+    with mss.mss() as sct:
+        shot = sct.grab(sct.monitors[1])
+        mss.tools.to_png(shot.rgb, shot.size, output=out_path)
+
+
+def capture(backend: str, out_path: str) -> None:
+    {"grim": capture_grim, "portal": capture_portal, "mss": capture_mss}[backend](
+        out_path
+    )
+
+
+# --- OCR ---------------------------------------------------------------------
+
+
+def ocr_tesseract(image: str, lang: str) -> str:
+    if not have("tesseract"):
+        raise SystemExit("tesseract not found (pacman -S tesseract tesseract-data-jpn)")
+    res = subprocess.run(
+        build_tesseract_cmd(image, lang), capture_output=True, text=True, check=True
+    )
+    return res.stdout.strip()
+
+
+def ocr_mangaocr(image: str) -> str:
+    try:
+        from manga_ocr import MangaOcr
+    except ImportError:
+        raise SystemExit("manga-ocr backend needs the manga-ocr package")
+    return MangaOcr()(image).strip()
+
+
+def run_ocr(image: str, engine: str, lang: str) -> str:
+    return ocr_mangaocr(image) if engine == "manga-ocr" else ocr_tesseract(image, lang)
+
+
+# --- clipboard push ----------------------------------------------------------
+
+
+def push_clipboard(text: str) -> None:
+    if not have("wl-copy"):
+        raise SystemExit("wl-copy not found (pacman -S wl-clipboard)")
+    subprocess.run(["wl-copy"], input=text, text=True, check=True)
+
+
+# --- main --------------------------------------------------------------------
+
+
+def parse_args(argv=None) -> argparse.Namespace:
+    p = argparse.ArgumentParser(
+        prog="lunatranslator-ocr",
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument(
+        "--lang",
+        default=os.environ.get("LT_OCR_LANG", "jpn+eng"),
+        help="tesseract language(s), default jpn+eng",
+    )
+    p.add_argument(
+        "--engine",
+        choices=("tesseract", "manga-ocr"),
+        default=os.environ.get("LT_OCR_ENGINE", "tesseract"),
+        help="OCR engine (manga-ocr is far better for Japanese)",
+    )
+    p.add_argument(
+        "--backend",
+        choices=CAPTURE_BACKENDS,
+        default=None,
+        help="capture backend (default: auto-detect)",
+    )
+    p.add_argument(
+        "--print",
+        action="store_true",
+        dest="echo",
+        help="also print recognized text to stdout",
+    )
+    return p.parse_args(argv)
+
+
+def main(argv=None) -> int:
+    args = parse_args(argv)
+    backend = args.backend or detect_capture_backend()
+
+    with tempfile.TemporaryDirectory() as td:
+        img = os.path.join(td, "shot.png")
+        try:
+            capture(backend, img)
+        except subprocess.CalledProcessError as e:
+            print(f"capture failed ({backend}): {e}", file=sys.stderr)
+            return 1
+        text = run_ocr(img, args.engine, args.lang)
+
+    if not text:
+        print("no text recognized", file=sys.stderr)
+        return 2
+
+    push_clipboard(text)
+    if args.echo:
+        print(text)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

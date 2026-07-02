@@ -1,0 +1,34 @@
+_refresh_caches() {
+	gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor &>/dev/null || true
+	update-desktop-database -q /usr/share/applications &>/dev/null || true
+}
+
+post_install() {
+	_refresh_caches
+	cat <<'EOF'
+==> LunaTranslator (Wine) installed.
+
+    First launch downloads the portable app once, then it self-updates:
+        lunatranslator            # launch (general OCR + clipboard)
+
+    Hook a specific game (same Wine prefix is required for HOOK):
+        lunatranslator-run GAME.exe          # manual
+        lunatranslator-lutris                # Lutris pre-launch script
+        lunatranslator-heroic                # Heroic wrapper command
+        lunatranslator-steam %command%       # Steam launch option (best-effort)
+
+    OCR for native Linux browser games (bind to a compositor hotkey):
+        lunatranslator-ocr
+
+    Full setup, per-launcher strings and troubleshooting:
+        /usr/share/doc/lunatranslator-wine/README.md
+EOF
+}
+
+post_upgrade() {
+	post_install
+}
+
+post_remove() {
+	_refresh_caches
+}
